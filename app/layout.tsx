@@ -5,6 +5,8 @@ import { SubscribeModal } from "@/components/main/modals/subscribe";
 import ReactQueryDevtoolsProvider from "@/components/providers/react-query-devtools";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "@/components/ui/toaster";
+import { Suspense } from "react";
+import SuspenseLoading from "@/components/main/suspense-loading";
 
 export const metadata: Metadata = {
   title: "Blogo",
@@ -26,7 +28,7 @@ export default function RootLayout({
               <Toaster />
               <SubscribeModal />
               <Header />
-              {children}
+              <Suspense fallback={<SuspenseLoading />}>{children}</Suspense>
             </div>
           </ReactQueryDevtoolsProvider>
         </body>

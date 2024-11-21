@@ -27,7 +27,7 @@ const Page = () => {
   const { data, isLoading } = useQuery<Article[]>({
     queryKey: ["getSearchArticle"],
     queryFn: () => axios.get(url).then((resp) => resp.data),
-    enabled: !!url,
+    enabled: !!search,
   });
 
   if (!search) {

@@ -14,7 +14,9 @@ const ReactQueryDevtoolsProvider = ({
   return (
     <QueryClientProvider client={QueryClients}>
       {children}
-      <ReactQueryDevtools initialIsOpen={false} />
+      {process.env.NODE_ENV !== "production" && (
+        <ReactQueryDevtools initialIsOpen={false} />
+      )}
     </QueryClientProvider>
   );
 };
