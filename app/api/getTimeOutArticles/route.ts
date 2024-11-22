@@ -16,7 +16,7 @@ export async function GET() {
     const transporter = await nodemailer.createTransport({
       host: "smtp.gmail.com",
       port: 587,
-      secure: false, // true for port 465, false for other ports
+      secure: false,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
@@ -110,7 +110,7 @@ export async function GET() {
               description: article.description,
               content: article.content,
               imageUrl: article.urlToImage,
-              category: "GAMING", // Changer la catégorie pour les articles de jeux
+              category: "GAMING",
               author: article.author,
               sourLink: article.url,
             },
