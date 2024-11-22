@@ -48,14 +48,14 @@ const Page = () => {
 
   return (
     <div className="h-screen flex flex-col justify-between">
-      <div className="pt-8 max-[450px]:pt-20 items-center text-center  justify-center ">
+      <div className="pt-8 items-center text-center  justify-center ">
         <div className="pt-10 text-start px-6 max-sm:px-8 flex gap-2 sm:hidden">
           <p className="font-medium">Search : </p>
           <p className="text-blue-400 font-medium">{search}</p>
         </div>
 
         {/* Desktop */}
-        <div className="max-sm:hidden px-6 mt-5 sm:mt-16 flex flex-wrap gap-x-20 max-[785px]:gap-x-10 gap-y-10 items-center justify-center text-center">
+        <div className="max-sm:hidden px-6 mt-5 sm:mt-16 flex flex-wrap gap-x-20 max-[785px]:gap-x-10 gap-y-10 items-start justify-center text-center">
           {!isLoading &&
             data?.map((article) => (
               <ArticleCard

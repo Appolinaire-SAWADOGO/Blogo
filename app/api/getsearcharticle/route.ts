@@ -20,6 +20,7 @@ export async function GET(req: Request) {
           mode: "insensitive",
         },
       },
+      take: 40,
     });
     return NextResponse.json(data, { status: 200 });
   } catch {
