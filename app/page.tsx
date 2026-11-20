@@ -5,15 +5,14 @@ import ArticleCard from "@/components/main/article-card";
 import Footer from "@/components/main/footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-// import {
-//   Pagination,
-//   PaginationContent,
-//   PaginationEllipsis,
-//   PaginationItem,
-//   PaginationLink,
-//   PaginationNext,
-//   PaginationPrevious,
-// } from "@/components/ui/pagination";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Article } from "@prisma/client";
@@ -27,28 +26,46 @@ export default function Home() {
   const router = useRouter();
 
   const [category, setCategory] = useState<"all" | "technology" | "gaming">(
-    "all"
+    "all",
   );
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const { categoryStore } = useCategoryStore();
 
-  const { data: allData, isLoading: isLoadingAll } = useQuery<Article[]>({
-    queryKey: ["all"],
-    queryFn: () => axios.get("/api/all").then((resp) => resp.data),
-  });
-  const { data: technologyData, isLoading: isLoadingTechnology } = useQuery<
-    Article[]
-  >({
-    queryKey: ["technology"],
-    queryFn: () => axios.get("/api/technology").then((resp) => resp.data),
-  });
+  type PaginatedArticles = {
+    articles: Article[];
+    page: number;
+    totalPages: number;
+  };
 
-  const { data: gamingData, isLoading: isLoadingGaming } = useQuery<Article[]>({
-    queryKey: ["gaming"],
-    queryFn: () => axios.get("/api/gaming").then((resp) => resp.data),
-  });
+  const { data: allData, isLoading: isLoadingAll } =
+    useQuery<PaginatedArticles>({
+      queryKey: ["all", page],
+      queryFn: () =>
+        axios.get(`/api/all?page=${page}`).then((resp) => resp.data),
+    });
+  const { data: technologyData, isLoading: isLoadingTechnology } =
+    useQuery<PaginatedArticles>({
+      queryKey: ["technology", page],
+      queryFn: () =>
+        axios.get(`/api/technology?page=${page}`).then((resp) => resp.data),
+    });
+
+  const { data: gamingData, isLoading: isLoadingGaming } =
+    useQuery<PaginatedArticles>({
+      queryKey: ["gaming", page],
+      queryFn: () =>
+        axios.get(`/api/gaming?page=${page}`).then((resp) => resp.data),
+    });
 
   const isLoading = isLoadingAll || isLoadingGaming || isLoadingTechnology;
+
+  const totalPages =
+    category === "all"
+      ? (allData?.totalPages ?? 1)
+      : category === "technology"
+        ? (technologyData?.totalPages ?? 1)
+        : (gamingData?.totalPages ?? 1);
 
   return (
     <div className="pt-24 max-[450px]:pt-20  items-center text-center justify-center">
@@ -83,10 +100,11 @@ export default function Home() {
           className={cn(
             "border-2 rounded-none w-24 hover:bg-black hover:shadow-transparent hover:text-white",
             category != "all" &&
-              "text-black bg-transparent border-black shadow-[8px_8px]"
+              "text-black bg-transparent border-black shadow-[8px_8px]",
           )}
           onClick={() => {
             setCategory("all");
+            setPage(1);
             router.refresh();
           }}
         >
@@ -95,12 +113,13 @@ export default function Home() {
         <Button
           onClick={() => {
             setCategory("technology");
+            setPage(1);
             router.refresh();
           }}
           className={cn(
             "border-2 border-black rounded-none w-24 bg-transparent hover:bg-black shadow-[8px_8px] text-black hover:text-white",
             category === "technology" &&
-              "bg-black shadow-transparent text-white"
+              "bg-black shadow-transparent text-white",
           )}
         >
           Technology
@@ -108,11 +127,12 @@ export default function Home() {
         <Button
           onClick={() => {
             setCategory("gaming");
+            setPage(1);
             router.refresh();
           }}
           className={cn(
             "border-2 border-black rounded-none w-24 bg-transparent hover:bg-black shadow-[8px_8px] text-black hover:text-white",
-            category === "gaming" && "bg-black shadow-transparent text-white"
+            category === "gaming" && "bg-black shadow-transparent text-white",
           )}
         >
           Gaming
@@ -122,7 +142,7 @@ export default function Home() {
       <div className="max-sm:hidden px-6 mt-16 flex flex-wrap gap-x-20 max-[785px]:gap-x-10 gap-y-10 items-start justify-center text-center">
         {category === "all" &&
           !isLoading &&
-          allData?.map((article) => (
+          allData?.articles.map((article) => (
             <ArticleCard
               key={article.id}
               mobile={false}
@@ -138,7 +158,7 @@ export default function Home() {
           ))}
         {category === "gaming" &&
           !isLoading &&
-          gamingData?.map((article) => (
+          gamingData?.articles.map((article) => (
             <ArticleCard
               key={article.id}
               mobile={false}
@@ -154,7 +174,7 @@ export default function Home() {
           ))}
         {category === "technology" &&
           !isLoading &&
-          technologyData?.map((article) => (
+          technologyData?.articles.map((article) => (
             <ArticleCard
               key={article.id}
               mobile={false}
@@ -238,14 +258,14 @@ export default function Home() {
         <div
           className={cn(
             "flex items-center text-center justify-center bg-black text-white w-[130px] h-8 mb-8 sm:hidden",
-            categoryStore === "gaming" && "hidden"
+            categoryStore === "gaming" && "hidden",
           )}
         >
           Technologie
         </div>
 
         {!isLoading ? (
-          technologyData?.map((article) => (
+          technologyData?.articles?.map((article) => (
             <ArticleCard
               key={article.id}
               mobile={true}
@@ -274,14 +294,14 @@ export default function Home() {
         <div
           className={cn(
             "flex items-center text-center justify-center bg-black text-white w-[130px] h-8 mb-8 mt-16 sm:hidden",
-            categoryStore === "technology" && "hidden"
+            categoryStore === "technology" && "hidden",
           )}
         >
           Gaming
         </div>
 
         {!isLoading ? (
-          gamingData?.map((article) => (
+          gamingData?.articles?.map((article) => (
             <ArticleCard
               key={article.id}
               mobile={true}
@@ -306,6 +326,64 @@ export default function Home() {
           </div>
         )}
       </div>
+
+      {!isLoading && totalPages > 1 && (
+        <div className="flex justify-center mt-10">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  href="#"
+                  aria-disabled={page === 1}
+                  className={cn(
+                    "border-2 border-black",
+                    page === 1 && "pointer-events-none opacity-50",
+                  )}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    if (page > 1) setPage((current) => current - 1);
+                  }}
+                />
+              </PaginationItem>
+
+              {Array.from({ length: totalPages }, (_, index) => index + 1).map(
+                (pageNumber) => (
+                  <PaginationItem key={pageNumber}>
+                    <PaginationLink
+                      href="#"
+                      isActive={page === pageNumber}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        setPage(pageNumber);
+                      }}
+                      className="border-2 border-black rounded-none"
+                    >
+                      {pageNumber}
+                    </PaginationLink>
+                  </PaginationItem>
+                ),
+              )}
+
+              <PaginationItem>
+                <PaginationNext
+                  href="#"
+                  aria-disabled={page === totalPages}
+                  className={cn(
+                    "border-2 border-black",
+                    page === totalPages && "pointer-events-none opacity-50",
+                  )}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    if (page < totalPages) {
+                      setPage((current) => current + 1);
+                    }
+                  }}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
 
       <Footer />
     </div>
