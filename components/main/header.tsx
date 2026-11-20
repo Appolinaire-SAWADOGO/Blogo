@@ -230,31 +230,40 @@ const Header = () => {
               </SheetHeader>
               <div className=" flex flex-col items-center justify-center mt-8 gap-5">
                 <Button
-                  onClick={setAllStore}
+                  onClick={() => {
+                    setAllStore();
+                    router.push("/");
+                  }}
                   className={cn(
                     categoryStore === "all"
                       ? "rounded-none w-full"
-                      : "border-2 border-black rounded-none w-full bg-transparent hover:bg-black shadow-[8px_8px] text-black hover:text-white"
+                      : "border-2 border-black rounded-none w-full bg-transparent hover:bg-black shadow-[8px_8px] text-black hover:text-white",
                   )}
                 >
                   All
                 </Button>
                 <Button
-                  onClick={setTechnologyStore}
+                  onClick={() => {
+                    setTechnologyStore();
+                    router.push("/?category=technology");
+                  }}
                   className={cn(
                     categoryStore === "technology"
                       ? "rounded-none w-full"
-                      : "border-2 border-black rounded-none w-full bg-transparent hover:bg-black shadow-[8px_8px] text-black hover:text-white"
+                      : "border-2 border-black rounded-none w-full bg-transparent hover:bg-black shadow-[8px_8px] text-black hover:text-white",
                   )}
                 >
                   Technologie
                 </Button>
                 <Button
-                  onClick={setGamingStore}
+                  onClick={() => {
+                    setGamingStore();
+                    router.push("/?category=gaming");
+                  }}
                   className={cn(
                     categoryStore === "gaming"
                       ? "rounded-none w-full"
-                      : "border-2 border-black rounded-none w-full bg-transparent hover:bg-black shadow-[8px_8px] text-black hover:text-white"
+                      : "border-2 border-black rounded-none w-full bg-transparent hover:bg-black shadow-[8px_8px] text-black hover:text-white",
                   )}
                 >
                   Gaming
@@ -264,7 +273,7 @@ const Header = () => {
                 <h1
                   className={cn(
                     "font-extrabold text-2xl",
-                    isSignedIn && "hidden"
+                    isSignedIn && "hidden",
                   )}
                 >
                   Subscribe

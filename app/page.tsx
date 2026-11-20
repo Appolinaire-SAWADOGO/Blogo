@@ -1,54 +1,63 @@
 "use client";
 
-import { useCategoryStore } from "@/actions/store/category";
 import ArticleCard from "@/components/main/article-card";
+import ArticlePagination from "@/components/main/article-pagination";
 import Footer from "@/components/main/footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-// import {
-//   Pagination,
-//   PaginationContent,
-//   PaginationEllipsis,
-//   PaginationItem,
-//   PaginationLink,
-//   PaginationNext,
-//   PaginationPrevious,
-// } from "@/components/ui/pagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import type { PaginatedResponse } from "@/lib/types";
 import { Article } from "@prisma/client";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { Search } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useCategoryStore } from "@/actions/store/category";
 
 export default function Home() {
   const router = useRouter();
-
-  const [category, setCategory] = useState<"all" | "technology" | "gaming">(
-    "all"
-  );
+  const params = useSearchParams();
+  const categoryParam = params.get("category");
+  const category =
+    categoryParam === "technology" || categoryParam === "gaming"
+      ? categoryParam
+      : "all";
+  const pageParam = params.get("page") ?? "1";
   const [search, setSearch] = useState("");
-  const { categoryStore } = useCategoryStore();
+  const { setAllStore, setTechnologyStore, setGamingStore } =
+    useCategoryStore();
 
-  const { data: allData, isLoading: isLoadingAll } = useQuery<Article[]>({
-    queryKey: ["all"],
-    queryFn: () => axios.get("/api/all").then((resp) => resp.data),
-  });
-  const { data: technologyData, isLoading: isLoadingTechnology } = useQuery<
-    Article[]
+  useEffect(() => {
+    if (category === "all") setAllStore();
+    else if (category === "technology") setTechnologyStore();
+    else setGamingStore();
+  }, [category, setAllStore, setGamingStore, setTechnologyStore]);
+
+  const endpoint = category === "all" ? "/api/all" : `/api/${category}`;
+  const { data, isLoading, isFetching, isError, refetch } = useQuery<
+    PaginatedResponse<Article>,
+    Error
   >({
-    queryKey: ["technology"],
-    queryFn: () => axios.get("/api/technology").then((resp) => resp.data),
+    queryKey: ["articles", category, pageParam],
+    queryFn: () =>
+      axios
+        .get<
+          PaginatedResponse<Article>
+        >(`${endpoint}?page=${encodeURIComponent(pageParam)}`)
+        .then((response) => response.data),
+    keepPreviousData: true,
   });
 
-  const { data: gamingData, isLoading: isLoadingGaming } = useQuery<Article[]>({
-    queryKey: ["gaming"],
-    queryFn: () => axios.get("/api/gaming").then((resp) => resp.data),
-  });
-
-  const isLoading = isLoadingAll || isLoadingGaming || isLoadingTechnology;
+  const selectCategory = (nextCategory: "all" | "technology" | "gaming") => {
+    const query = new URLSearchParams(params.toString());
+    query.delete("page");
+    if (nextCategory === "all") query.delete("category");
+    else query.set("category", nextCategory);
+    const queryString = query.toString();
+    router.push(queryString ? `/?${queryString}` : "/");
+  };
 
   return (
     <div className="pt-24 max-[450px]:pt-20  items-center text-center justify-center">
@@ -83,36 +92,33 @@ export default function Home() {
           className={cn(
             "border-2 rounded-none w-24 hover:bg-black hover:shadow-transparent hover:text-white",
             category != "all" &&
-              "text-black bg-transparent border-black shadow-[8px_8px]"
+              "text-black bg-transparent border-black shadow-[8px_8px]",
           )}
           onClick={() => {
-            setCategory("all");
-            router.refresh();
+            selectCategory("all");
           }}
         >
           All
         </Button>
         <Button
           onClick={() => {
-            setCategory("technology");
-            router.refresh();
+            selectCategory("technology");
           }}
           className={cn(
             "border-2 border-black rounded-none w-24 bg-transparent hover:bg-black shadow-[8px_8px] text-black hover:text-white",
             category === "technology" &&
-              "bg-black shadow-transparent text-white"
+              "bg-black shadow-transparent text-white",
           )}
         >
           Technology
         </Button>
         <Button
           onClick={() => {
-            setCategory("gaming");
-            router.refresh();
+            selectCategory("gaming");
           }}
           className={cn(
             "border-2 border-black rounded-none w-24 bg-transparent hover:bg-black shadow-[8px_8px] text-black hover:text-white",
-            category === "gaming" && "bg-black shadow-transparent text-white"
+            category === "gaming" && "bg-black shadow-transparent text-white",
           )}
         >
           Gaming
@@ -120,51 +126,19 @@ export default function Home() {
       </div>
 
       <div className="max-sm:hidden px-6 mt-16 flex flex-wrap gap-x-20 max-[785px]:gap-x-10 gap-y-10 items-start justify-center text-center">
-        {category === "all" &&
-          !isLoading &&
-          allData?.map((article) => (
+        {!isLoading &&
+          !isError &&
+          data?.items.map((article) => (
             <ArticleCard
               key={article.id}
               mobile={false}
               id={article.id}
-              title={article.title as string}
-              description={article.description as string}
-              content={article.content as string}
-              imageUrl={article.imageUrl as string}
+              title={article.title ?? ""}
+              description={article.description ?? ""}
+              content={article.content ?? ""}
+              imageUrl={article.imageUrl ?? ""}
               category={article.category}
-              creationDate={article.creationDate}
-              hidden={false}
-            />
-          ))}
-        {category === "gaming" &&
-          !isLoading &&
-          gamingData?.map((article) => (
-            <ArticleCard
-              key={article.id}
-              mobile={false}
-              id={article.id}
-              title={article.title as string}
-              description={article.description as string}
-              content={article.content as string}
-              imageUrl={article.imageUrl as string}
-              category={article.category}
-              creationDate={article.creationDate}
-              hidden={false}
-            />
-          ))}
-        {category === "technology" &&
-          !isLoading &&
-          technologyData?.map((article) => (
-            <ArticleCard
-              key={article.id}
-              mobile={false}
-              id={article.id}
-              title={article.title as string}
-              description={article.description as string}
-              content={article.content as string}
-              imageUrl={article.imageUrl as string}
-              category={article.category}
-              creationDate={article.creationDate}
+              creationDate={new Date(article.creationDate)}
               hidden={false}
             />
           ))}
@@ -238,27 +212,29 @@ export default function Home() {
         <div
           className={cn(
             "flex items-center text-center justify-center bg-black text-white w-[130px] h-8 mb-8 sm:hidden",
-            categoryStore === "gaming" && "hidden"
+            category === "gaming" && "hidden",
           )}
         >
           Technologie
         </div>
 
         {!isLoading ? (
-          technologyData?.map((article) => (
-            <ArticleCard
-              key={article.id}
-              mobile={true}
-              id={article.id}
-              title={article.title as string}
-              description={article.description as string}
-              content={article.content as string}
-              imageUrl={article.imageUrl as string}
-              category={article.category}
-              creationDate={article.creationDate}
-              hidden={categoryStore === "gaming"}
-            />
-          ))
+          data?.items
+            .filter((article) => article.category === "TECHNOLOGIE")
+            .map((article) => (
+              <ArticleCard
+                key={article.id}
+                mobile={true}
+                id={article.id}
+                title={article.title ?? ""}
+                description={article.description ?? ""}
+                content={article.content ?? ""}
+                imageUrl={article.imageUrl ?? ""}
+                category={article.category}
+                creationDate={new Date(article.creationDate)}
+                hidden={category === "gaming"}
+              />
+            ))
         ) : (
           <div className="flex flex-col space-y-3">
             <Skeleton className="h-[300px] w-full rounded-xl" />
@@ -274,27 +250,29 @@ export default function Home() {
         <div
           className={cn(
             "flex items-center text-center justify-center bg-black text-white w-[130px] h-8 mb-8 mt-16 sm:hidden",
-            categoryStore === "technology" && "hidden"
+            category === "technology" && "hidden",
           )}
         >
           Gaming
         </div>
 
         {!isLoading ? (
-          gamingData?.map((article) => (
-            <ArticleCard
-              key={article.id}
-              mobile={true}
-              id={article.id}
-              title={article.title as string}
-              description={article.description as string}
-              content={article.content as string}
-              imageUrl={article.imageUrl as string}
-              category={article.category}
-              creationDate={article.creationDate}
-              hidden={categoryStore === "technology"}
-            />
-          ))
+          data?.items
+            .filter((article) => article.category === "GAMING")
+            .map((article) => (
+              <ArticleCard
+                key={article.id}
+                mobile={true}
+                id={article.id}
+                title={article.title ?? ""}
+                description={article.description ?? ""}
+                content={article.content ?? ""}
+                imageUrl={article.imageUrl ?? ""}
+                category={article.category}
+                creationDate={new Date(article.creationDate)}
+                hidden={category === "technology"}
+              />
+            ))
         ) : (
           <div className="flex flex-col space-y-3">
             <Skeleton className="h-[300px] w-full rounded-xl" />
@@ -306,6 +284,27 @@ export default function Home() {
           </div>
         )}
       </div>
+
+      {isError && (
+        <div role="alert" className="mx-6 my-8 text-center">
+          <p>Impossible de charger les articles.</p>
+          <Button variant="outline" className="mt-3" onClick={() => refetch()}>
+            Réessayer
+          </Button>
+        </div>
+      )}
+      {!isLoading && !isError && data?.total === 0 && (
+        <p className="mx-6 my-10 text-center">Aucun article pour le moment.</p>
+      )}
+      {isFetching && data && (
+        <p
+          aria-live="polite"
+          className="text-center text-sm text-muted-foreground"
+        >
+          Chargement des articles...
+        </p>
+      )}
+      {data && !isError && <ArticlePagination totalPages={data.totalPages} />}
 
       <Footer />
     </div>

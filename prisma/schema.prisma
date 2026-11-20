@@ -34,4 +34,7 @@ model Article {
   author        String?
   sourLink      String?
   creationDate  DateTime  @default(now())
+
+  @@index([category, creationDate])
+  @@index([creationDate])
 }

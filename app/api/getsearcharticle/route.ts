@@ -1,29 +1,35 @@
-import prisma from "@/lib/db";
 import { NextResponse } from "next/server";
+import {
+  articleSearchQuerySchema,
+  getArticlesPaginated,
+} from "@/lib/article-pagination";
 
 export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const parsed = articleSearchQuerySchema.safeParse(
+    Object.fromEntries(url.searchParams.entries()),
+  );
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: parsed.error.flatten() },
+      { status: 400 },
+    );
+  }
+
   try {
-    const url = new URL(req.url);
-    const { searchParams } = url;
-    const search = searchParams.get("search");
-
-    if (!search) {
-      return NextResponse.json("la valeur search n'existe pas !", {
-        status: 400,
-      });
-    }
-
-    const data = await prisma.article.findMany({
-      where: {
-        title: {
-          contains: search,
-          mode: "insensitive",
-        },
-      },
-      take: 40,
+    const category =
+      parsed.data.category === "technology"
+        ? "TECHNOLOGIE"
+        : parsed.data.category === "gaming"
+          ? "GAMING"
+          : undefined;
+    const data = await getArticlesPaginated({
+      ...parsed.data,
+      category,
     });
     return NextResponse.json(data, { status: 200 });
-  } catch {
-    return new NextResponse("Erreur Get search artcle", { status: 400 });
+  } catch (error) {
+    console.error("Erreur API recherche articles", error);
+    return NextResponse.json({ error: "Erreur serveur." }, { status: 500 });
   }
 }

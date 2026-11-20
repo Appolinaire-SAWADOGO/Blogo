@@ -9,28 +9,37 @@ import { Skeleton } from "@/components/ui/skeleton";
 import ArticleCard from "@/components/main/article-card";
 import Footer from "@/components/main/footer";
 import { useQuery } from "@tanstack/react-query";
+import ArticlePagination from "@/components/main/article-pagination";
+import { Button } from "@/components/ui/button";
+import type { PaginatedResponse } from "@/lib/types";
 
 const Page = () => {
   const params = useSearchParams();
   const search = params.get("search");
+  const page = params.get("page") ?? "1";
 
   const url = qs.stringifyUrl(
     {
       url: "/api/getsearcharticle",
       query: {
         search,
+        page,
       },
     },
-    { skipNull: true }
+    { skipNull: true },
   );
 
-  const { data, isLoading } = useQuery<Article[]>({
-    queryKey: ["getSearchArticle"],
+  const { data, isLoading, isFetching, isError, refetch } = useQuery<
+    PaginatedResponse<Article>,
+    Error
+  >({
+    queryKey: ["getSearchArticle", search, page],
     queryFn: () => axios.get(url).then((resp) => resp.data),
-    enabled: !!search,
+    enabled: Boolean(search?.trim()),
+    keepPreviousData: true,
   });
 
-  if (!search) {
+  if (!search?.trim()) {
     return (
       <div className="h-screen w-full flex items-center justify-center text-center font-medium text-lg">
         No Search
@@ -38,16 +47,8 @@ const Page = () => {
     );
   }
 
-  if (data?.length === 0) {
-    return (
-      <div className="h-screen w-full flex items-center justify-center text-center font-medium text-lg">
-        Not Found !
-      </div>
-    );
-  }
-
   return (
-    <div className="h-screen flex flex-col justify-between">
+    <div className="min-h-screen flex flex-col justify-between">
       <div className="pt-8 items-center text-center  justify-center ">
         <div className="pt-10 text-start px-6 max-sm:px-8 flex gap-2 sm:hidden">
           <p className="font-medium">Search : </p>
@@ -57,17 +58,18 @@ const Page = () => {
         {/* Desktop */}
         <div className="max-sm:hidden px-6 mt-5 sm:mt-16 flex flex-wrap gap-x-20 max-[785px]:gap-x-10 gap-y-10 items-start justify-center text-center">
           {!isLoading &&
-            data?.map((article) => (
+            !isError &&
+            data?.items.map((article) => (
               <ArticleCard
                 key={article.id}
                 mobile={false}
                 id={article.id}
-                title={article.title as string}
-                description={article.description as string}
-                content={article.content as string}
-                imageUrl={article.imageUrl as string}
+                title={article.title ?? ""}
+                description={article.description ?? ""}
+                content={article.content ?? ""}
+                imageUrl={article.imageUrl ?? ""}
                 category={article.category}
-                creationDate={article.creationDate}
+                creationDate={new Date(article.creationDate)}
                 hidden={false}
               />
             ))}
@@ -136,19 +138,19 @@ const Page = () => {
 
         {/* Mobile */}
         <div className="mt-5 px-8 min-[768px]:hidden">
-          {!isLoading ? (
+          {!isLoading && !isError ? (
             data &&
-            data?.map((article) => (
+            data.items.map((article) => (
               <ArticleCard
                 key={article.id}
                 mobile={true}
                 id={article.id}
-                title={article.title as string}
-                description={article.description as string}
-                content={article.content as string}
-                imageUrl={article.imageUrl as string}
+                title={article.title ?? ""}
+                description={article.description ?? ""}
+                content={article.content ?? ""}
+                imageUrl={article.imageUrl ?? ""}
                 category={article.category}
-                creationDate={article.creationDate}
+                creationDate={new Date(article.creationDate)}
                 hidden={false}
               />
             ))
@@ -174,6 +176,26 @@ const Page = () => {
           )}
         </div>
       </div>
+      {isError && (
+        <div role="alert" className="mx-6 my-8 text-center">
+          <p>Impossible de charger les résultats.</p>
+          <Button variant="outline" className="mt-3" onClick={() => refetch()}>
+            Réessayer
+          </Button>
+        </div>
+      )}
+      {!isLoading && !isError && data?.total === 0 && (
+        <p className="mx-6 my-10 text-center">Aucun résultat trouvé.</p>
+      )}
+      {isFetching && data && (
+        <p
+          aria-live="polite"
+          className="text-center text-sm text-muted-foreground"
+        >
+          Chargement des résultats...
+        </p>
+      )}
+      {data && !isError && <ArticlePagination totalPages={data.totalPages} />}
       <div className="h-24">
         <Footer />
       </div>

@@ -1,28 +1,35 @@
-import prisma from "@/lib/db";
 import { NextResponse } from "next/server";
+import {
+  getArticlesPaginated,
+  parseArticlePaginationQuery,
+} from "@/lib/article-pagination";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const parsed = parseArticlePaginationQuery(url);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: parsed.error.flatten() },
+      { status: 400 },
+    );
+  }
+
   try {
-    const dbDataFinal = await prisma.article.findMany({
-      where: {
-        imageUrl: {
-          not: null,
-        },
-      },
-      orderBy: {
-        creationDate: "desc",
-      },
-      take: 12,
+    const category =
+      parsed.data.category === "technology"
+        ? "TECHNOLOGIE"
+        : parsed.data.category === "gaming"
+          ? "GAMING"
+          : undefined;
+    const data = await getArticlesPaginated({
+      ...parsed.data,
+      category,
+      imageRequired: true,
     });
 
-    return NextResponse.json(dbDataFinal, { status: 200 });
+    return NextResponse.json(data, { status: 200 });
   } catch (error) {
-    if (error instanceof Error) {
-      console.log(
-        "Requete all echouer --------------------------",
-        error.message
-      );
-    }
-    return new NextResponse("Erreur Get All", { status: 400 });
+    console.error("Erreur API all", error);
+    return NextResponse.json({ error: "Erreur serveur." }, { status: 500 });
   }
 }
