@@ -1,41 +1,26 @@
 import prisma from "@/lib/db";
 import { NextResponse } from "next/server";
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    const page = Math.max(
-      1,
-      Number(new URL(req.url).searchParams.get("page") ?? 1),
-    );
-    const pageSize = 8;
-    const where = { category: "TECHNOLOGIE" as const };
-
-    const [articles, total] = await prisma.$transaction([
-      prisma.article.findMany({
-        where,
-        orderBy: {
-          creationDate: "desc",
-        },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
-      prisma.article.count({ where }),
-    ]);
-
-    return NextResponse.json({
-      articles,
-      page,
-      pageSize,
-      total,
-      totalPages: Math.ceil(total / pageSize),
+    const dbDataFinal = await prisma.article.findMany({
+      where: {
+        category: "TECHNOLOGIE",
+      },
+      orderBy: {
+        creationDate: "desc",
+      },
+      take: 8,
     });
+
+    return NextResponse.json(dbDataFinal, { status: 200 });
   } catch (error) {
     if (error instanceof Error) {
       console.log(
         "Requete technology echouer --------------------------",
-        error.message,
+        error.message
       );
     }
-    return new NextResponse("Erreur Get Technology", { status: 400 });
+    return new NextResponse("Erreur Get All", { status: 400 });
   }
 }
